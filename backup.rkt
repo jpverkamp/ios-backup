@@ -7,18 +7,19 @@
          with-backup)
 
 (require json
+         memoize 
          racket/dict
          xml/plist
          "utils.rkt")
 
 ; Represents an iPhone backup on disk
-(struct backup (name hash date phone-number path) #:transparent)
+(struct backup (name hash date phone-number path) #:prefab)
 
 ; Store the most recently used backup for other modules
 (define current-backup (make-parameter #f))
 
 ; Load all backups on disk into a list
-(define (list-backups)
+(define/memo (list-backups)
   ; Automatically find the backup path
   (define backup-root
     (for*/first ([path-parts (in-list '(("AppData" "Roaming" "Apple Computer" "MobileSync" "Backup")
