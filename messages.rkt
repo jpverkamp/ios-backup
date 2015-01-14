@@ -3,7 +3,8 @@
 (provide (struct-out chat)
          (struct-out message)
          (struct-out attachment)
-         list-chats)
+         list-chats
+         find-chats-by-contact)
 
 (require db
          memoize
@@ -88,3 +89,16 @@ ORDER BY date ASC")
          
          ; Create the chat object
          (chat contacts messages))))))
+
+; Get all chats involving a specific chat
+(define (find-chats-by-contact contact #:direct? [direct? #f])
+  ; Allow the user to specify the contact by name / phone number / email / etc
+  (when (not (contact? contact))
+    (set! contact (find-contact contact)))
+  
+  ; Filter the list of chats
+  (for/list ([chat (in-list (list-chats))]
+             #:when (if direct-only? 
+                        (equal? (list contact) (chat-contacts chat))
+                        (member contact (chat-contacts chat))))
+    chat))
