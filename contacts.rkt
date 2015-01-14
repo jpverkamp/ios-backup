@@ -21,7 +21,7 @@
 (hash-set! contacts-by-backup #f '())
 
 ; Load all contacts stored in a specific backup
-(define (current-contacts)
+(define (list-contacts)
   (hash-ref! 
    contacts-by-backup
    (current-backup)
@@ -49,13 +49,9 @@
        
        (contact name identifiers)))))
 
-; Return a list of current contacts
-(define (list-contacts)
-  (current-contacts))
-
 ; Load a user by name or value
 (define/memo (find-contact key)
-  (for/first ([contact (in-list (current-contacts))]
+  (for/first ([contact (in-list (list-contacts))]
               #:when (or (equal? key (contact-name contact))
                          (member key (contact-identifiers contact))))
     contact))
