@@ -17,7 +17,7 @@
 
 (define MESSAGES-DB "3d0d7e5fb2ce288813306e4d4636395e047a3d28")
 
-(struct chat (users messages) #:prefab)
+(struct chat (contacts messages) #:prefab)
 (struct message (date service sender subject text attachments) #:prefab)
 (struct attachment (name path) #:prefab)
 
@@ -36,12 +36,12 @@
        
        ; Loop over the individual chat ids
        (for/list ([(chat-id) (in-query sms-db "SELECT ROWID FROM chat")])
-         ; Determine which users were involved in the conversation by contact
-         ; Use models/users.rkt to figure out who belongs to contact information
+         ; Determine which contacts were involved in the conversation by contact
+         ; Use models/contacts.rkt to figure out who belongs to contact information
          (define user-query "SELECT id FROM chat_handle_join, handle WHERE chat_id = $1 AND handle_id = ROWID ORDER BY handle_id ASC")
          (define contacts
            (for/list ([(contact) (in-query sms-db user-query chat-id)])
-             (normalize-contact contact)))
+             (find-contact (normalize-contact contact))))
          
          ; Load the individual messages
          (define msg-query "
