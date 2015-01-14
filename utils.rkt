@@ -3,9 +3,12 @@
 (provide (all-defined-out))
 
 (require db
+         file/sha1
          racket/list
+         racket/format
          racket/match
          racket/string
+         racket/port
          xml/plist)
 
 ; Process a phone number or email address into a common format
@@ -45,3 +48,12 @@
 ; Read a plist file as a JSON expression from a file
 (define (read-plist/jsexpr [in (current-input-port)])
   (plist->jsexpr (read-plist in)))
+
+; Hash attachments so that we can find the local path
+(define (get-attachment-hash path [domain "MediaDomain"])
+  (for*/first ([prefix (in-list (list "/var/mobile/"
+                                      "~/"))]
+               #:when (and (> (string-length path) (string-length prefix))
+                           (equal? (substring path 0 (string-length prefix)) prefix)))
+    (define path-w/o-prefix (substring path (string-length prefix)))
+    (call-with-input-string (~a domain "-" path-w/o-prefix) sha1)))
