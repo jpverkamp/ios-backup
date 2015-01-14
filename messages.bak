@@ -98,7 +98,7 @@ ORDER BY date ASC")
   
   ; Filter the list of chats
   (for/list ([chat (in-list (list-chats))]
-             #:when (if direct? 
+             #:when (if direct-only? 
                         (equal? (list contact) (chat-contacts chat))
                         (member contact (chat-contacts chat))))
     chat))
