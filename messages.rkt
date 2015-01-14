@@ -69,7 +69,7 @@ ORDER BY date ASC")
                        (in-query sms-db msg-query chat-id)])
              ; Correct dates from Apple time to unix time
              ; TODO: Account for timezones?
-             (define date (date->string (seconds->date (+ raw-date 978336000)) #t))
+             (define date (seconds->date (+ raw-date 978336000 (- (* 16 60 60))) #f))
              
              (define sender
                (if (= 1 from-me?)
