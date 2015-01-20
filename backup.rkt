@@ -37,24 +37,17 @@
             (normalize-contact (dict-ref info-file '|Phone Number|))
             (build-path backup-root dir))))
 
-; Load a specific backup by either name or hash 
-(define (read-backup #:by-date [by-date #f]
-                     #:by-hash [by-hash #f]
-                     #:by-name [by-name #f] 
-                     #:by-phone-number [by-phone-number #f])
-  
-  (when (not (= 1 (length (filter (λ (x) x) (list by-date by-hash by-name by-phone-number)))))
-    (error 'read-backup "must specify exactly one identifier"))
-  
+; Load a specific backup, try to guess what the identifier is
+(define (read-backup identifier)
   (for/first ([backup (in-list (list-backups))]
-              #:when (or (and by-date (equal? by-date (backup-date backup)))
-                         (and by-name (equal? by-name (backup-name backup)))
-                         (and by-hash (equal? by-hash (backup-hash backup)))
-                         (and by-phone-number (equal? by-phone-number (backup-phone-number backup)))))
+              #:when (or (equal? identifier (backup-date backup))
+                         (equal? identifier (backup-name backup))
+                         (equal? identifier (backup-hash backup))
+                         (equal? identifier (backup-phone-number backup))))
     backup))
 
 ; Parameterize code with a current backup
-(define (with-backup thunk #:by-name [name #f] #:by-hash [hash #f])
-  (parameterize ([current-backup (read-backup #:by-name name #:by-hash hash)])
-    (thunk)))
+(define-syntax-rule (with-backup identifier body ...)
+  (parameterize ([current-backup (read-backup identifier)])
+    body ...))
 
