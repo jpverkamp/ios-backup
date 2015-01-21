@@ -1,19 +1,26 @@
 #lang racket
 
 (provide (struct-out app)
+         (struct-out file)
          list-apps
          find-app)
 
 (require db
          "backup.rkt"
-         "utils.rkt")
+         "utils.rkt"
+         "mbdb.rkt")
 
-(struct app (name plist) #:prefab #:mutable)
+(struct app (name plist files) #:prefab #:mutable)
+(struct file (name path) #:prefab)
 
 (define apps-by-backup (make-hash))
 (hash-set! apps-by-backup #f '())
 
+(define mdbd-records-by-backup (make-hash))
+(hash-set! mdbd-records-by-backup #f '())
+
 (define info.plist (build-path (backup-path (current-backup)) "Info.plist"))
+(define manifest.mdbd (build-path (backup-path (current-backup)) "Manifest.mbdb"))
 
 ; List all installed applications
 (define (list-apps)
@@ -25,10 +32,17 @@
                       (call-with-input-file info.plist
                         read-plist/jsexpr)
                       '|Installed Applications|))])
-     (app name #f))))
+     (app name #f #f))))
+
+; Get all MDBD records
+(define (list-mdbd-records)
+  (hash-ref!
+   mdbd-records-by-backup
+   (current-backup)
+   (with-input-from-file manifest.mdbd read-mbdb)))
 
 ; Find an app by name (actually a case insensative regex)
-; plists are loaded when this is called and cached
+; plists and files in domain are loaded when this is called and cached
 (define (find-app name)
   (define app
     (for/first ([app (in-list (list-apps))]
@@ -50,5 +64,17 @@
        (with-handlers ([exn? (λ (exn)
                                (call-with-input-file plist-path read-plist/jsexpr/binary))])
          (call-with-input-file plist-path read-plist/jsexpr)))))
+  
+  ; If this app hasn't loaded it's files from the mbdb manifest, do that
+  (when (and app (not (app-files app)))
+    (define app-domain (~a "AppDomain-" (app-name app)))
+    
+    (set-app-files!
+     app
+     (for/list ([record (in-list (list-mdbd-records))]
+                #:when (and (equal? (record-domain record) app-domain)
+                            (eq? 'file (record-mode record))))
+       (file (record-path record)
+             (build-path (backup-path (current-backup)) (record-hash record))))))
   
   app)
