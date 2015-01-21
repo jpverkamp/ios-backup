@@ -7,9 +7,7 @@
          find-chats-by-contact)
 
 (require db
-         memoize
          racket/date
-         racket/format
          racket/list
          racket/string
          "backup.rkt"

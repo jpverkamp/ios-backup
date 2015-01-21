@@ -4,8 +4,7 @@
          (struct-out property)
          read-mbdb)
 
-(require racket/format
-         "utils.rkt")
+(require "utils.rkt")
 
 ; File format documentation
 ; https://code.google.com/p/iphonebackupbrowser/wiki/MbdbMbdxFormat

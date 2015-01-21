@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 (provide (struct-out app)
          (struct-out file)
@@ -6,6 +6,7 @@
          find-app)
 
 (require db
+         racket/format
          "backup.rkt"
          "utils.rkt"
          "mbdb.rkt")
@@ -19,27 +20,26 @@
 (define mdbd-records-by-backup (make-hash))
 (hash-set! mdbd-records-by-backup #f '())
 
-(define info.plist (build-path (backup-path (current-backup)) "Info.plist"))
-(define manifest.mdbd (build-path (backup-path (current-backup)) "Manifest.mbdb"))
-
 ; List all installed applications
 (define (list-apps)
   (hash-ref! 
    apps-by-backup
    (current-backup)
-   (for/list ([name (in-list
-                     (hash-ref
-                      (call-with-input-file info.plist
-                        read-plist/jsexpr)
-                      '|Installed Applications|))])
-     (app name #f #f))))
+   (λ ()
+     (for/list ([name (in-list
+                       (hash-ref
+                        (call-with-input-file (build-path (backup-path (current-backup)) "Info.plist")
+                          read-plist/jsexpr)
+                        '|Installed Applications|))])
+       (app name #f #f)))))
 
 ; Get all MDBD records
 (define (list-mdbd-records)
   (hash-ref!
    mdbd-records-by-backup
    (current-backup)
-   (with-input-from-file manifest.mdbd read-mbdb)))
+   (λ ()
+     (with-input-from-file (build-path (backup-path (current-backup)) "Manifest.mbdb") read-mbdb))))
 
 ; Find an app by name (actually a case insensative regex)
 ; plists and files in domain are loaded when this is called and cached

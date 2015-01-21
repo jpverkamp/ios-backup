@@ -5,7 +5,6 @@
          find-contact)
 
 (require db
-         memoize
          racket/format
          racket/string
          "backup.rkt"
@@ -50,7 +49,7 @@
        (contact name identifiers)))))
 
 ; Load a user by name or value
-(define/memo (find-contact key)
+(define (find-contact key)
   (for/first ([contact (in-list (list-contacts))]
               #:when (or (equal? key (contact-name contact))
                          (member key (contact-identifiers contact))))
