@@ -5,9 +5,11 @@
 (require db
          file/sha1
          racket/list
+         racket/file
          racket/format
          racket/match
          racket/string
+         racket/system
          racket/port
          xml/plist)
 
@@ -49,10 +51,38 @@
 (define (read-plist/jsexpr [in (current-input-port)])
   (plist->jsexpr (read-plist in)))
 
+; Read a plist file as a JSON expression from a binary plist file
+(define (read-plist/jsexpr/binary [in (current-input-port)])
+  ; Copy the file to a temporary path
+  (define temp-filename (~a (gensym) ".plist"))
+  (call-with-output-file temp-filename
+    (λ (out) (copy-port in out)))
+    
+  ; Run Apple's plutil to convert it
+  ; Redirect err to suppress from missing programs
+  (parameterize ([current-error-port (open-output-nowhere)])
+    (for* ([path (in-list '("plutil"
+                            "plutil.exe"
+                            "\"C:\\Program Files (x86)\\Common Files\\Apple\\Apple Application Support\\plutil.exe\""))]
+           [return (in-value (system (~a path " -convert xml1 " temp-filename)))]
+           #:break return)
+      #t))
+  
+  ; Patch over xml/plist's handling of empty string element
+  (define plist-fixed-content 
+    (regexp-replace* #px"<string></string>"
+                     (file->string temp-filename)
+                     "<string> </string>"))
+  (delete-file temp-filename)
+  
+  ; Read the plist into memory and remove the temporary file
+  (call-with-input-string plist-fixed-content read-plist/jsexpr))
+
 ; Hash attachments so that we can find the local path
 (define (get-attachment-hash path [domain "MediaDomain"])
   (for*/first ([prefix (in-list (list "/var/mobile/"
-                                      "~/"))]
+                                      "~/"
+                                      ""))]
                #:when (and (> (string-length path) (string-length prefix))
                            (equal? (substring path 0 (string-length prefix)) prefix)))
     (define path-w/o-prefix (substring path (string-length prefix)))
