@@ -63,7 +63,8 @@
   (parameterize ([current-error-port (open-output-nowhere)])
     (for* ([path (in-list '("plutil"
                             "plutil.exe"
-                            "\"C:\\Program Files (x86)\\Common Files\\Apple\\Apple Application Support\\plutil.exe\""))]
+                            "\"C:\\Program Files (x86)\\Common Files\\Apple\\Apple Application Support\\plutil.exe\""
+                            "\"C:\\Program Files\\Common Files\\Apple\\Apple Application Support\\plutil.exe\""))]
            [return (in-value (system (~a path " -convert xml1 " temp-filename)))]
            #:break return)
       #t))
