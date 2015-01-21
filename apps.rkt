@@ -8,8 +8,6 @@
          "backup.rkt"
          "utils.rkt")
 
-(current-backup (read-backup "86b18eea28a991f4dd569d1f59737a842e24aa36"))
-
 (struct app (name plist) #:prefab #:mutable)
 
 (define apps-by-backup (make-hash))
