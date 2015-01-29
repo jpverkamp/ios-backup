@@ -27,7 +27,8 @@
          
          ; List all backups in that directory, along with some metadata
          [backups
-          (for/list ([dir (in-list (directory-list backup-root))])
+          (for/list ([dir (in-list (directory-list backup-root))]
+                     #:when (file-exists? (build-path backup-root dir "Info.plist"))) 
             (define info-file (call-with-input-file (build-path backup-root dir "Info.plist") read-plist/jsexpr))
             (backup (dict-ref info-file '|Device Name|)
                     (path->string dir)
