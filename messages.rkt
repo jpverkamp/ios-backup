@@ -14,7 +14,7 @@
          "contacts.rkt"
          "utils.rkt")
 
-(define MESSAGES-DB "3d0d7e5fb2ce288813306e4d4636395e047a3d28")
+(define MESSAGES-DB (hash-filename "Library/SMS/sms.db" "HomeDomain"))
 
 (struct chat (contacts messages) #:prefab)
 (struct message (date service sender subject text attachments) #:prefab)
@@ -37,7 +37,9 @@
        (for/list ([(chat-id) (in-query sms-db "SELECT ROWID FROM chat")])
          ; Determine which contacts were involved in the conversation by contact
          ; Use models/contacts.rkt to figure out who belongs to contact information
-         (define user-query "SELECT id FROM chat_handle_join, handle WHERE chat_id = $1 AND handle_id = ROWID ORDER BY handle_id ASC")
+         (define user-query "SELECT id FROM chat_handle_join, handle 
+                             WHERE chat_id = $1 AND handle_id = ROWID
+                             ORDER BY handle_id ASC")
          (define contacts
            (for/list ([(contact) (in-query sms-db user-query chat-id)])
              (find-contact (normalize-contact contact))))
@@ -46,19 +48,22 @@
          (define msg-query "
 SELECT
   message.ROWID as message_id,
-  date,
+  message.date,
   message.service,
-  is_from_me,
+  message.is_from_me,
   handle.id as them,
-  (CASE WHEN subject IS NULL THEN '' ELSE subject END),
-  (CASE WHEN text IS NULL THEN '' ELSE text END),
-  (SELECT group_concat(filename) FROM message_attachment_join, attachment WHERE message_id = message.ROWID AND attachment_id = attachment.ROWID)
+  (CASE WHEN message.subject IS NULL THEN '' ELSE message.subject END),
+  (CASE WHEN message.text IS NULL THEN '' ELSE message.text END),
+  (SELECT group_concat(attachment.filename)
+     FROM message_attachment_join, attachment
+     WHERE message_attachment_join.message_id = message.ROWID
+       AND message_attachment_join.attachment_id = attachment.ROWID)
 FROM
   chat_message_join,
   message,
   handle
 WHERE
-  chat_id = $1
+  chat_id = ?
   AND message_id = message.ROWID
   AND handle_id = handle.ROWID
 ORDER BY date ASC")
@@ -81,7 +86,7 @@ ORDER BY date ASC")
                    (for/list ([path (in-list (string-split raw-attachments ","))])
                      (attachment
                       (path->string (last (explode-path path)))
-                      (build-path (backup-path (current-backup)) (get-attachment-hash path))))))
+                      (build-path (backup-path (current-backup)) (hash-filename path))))))
              
              (message date service sender subject text attachments)))
          
