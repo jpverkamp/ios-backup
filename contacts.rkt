@@ -10,12 +10,12 @@
          "backup.rkt"
          "utils.rkt")
 
-(define CONTACTS-DB "31bb7ba8914766d4ba40d6dfb6113c8b614be442")
+(define CONTACTS-DB (hash-filename "Library/AddressBook/AddressBook.sqlitedb" "HomeDomain"))
 
 ; Name is a human readable name for a contact, identifiers are phone numbers / emails / etc
 (struct contact (name identifiers) #:prefab)
 
-; Store a seperate list of contacts for each backup (potentially)
+; Store a separate list of contacts for each backup (potentially)
 (define contacts-by-backup (make-hash))
 (hash-set! contacts-by-backup #f '())
 
