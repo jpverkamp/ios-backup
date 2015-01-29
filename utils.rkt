@@ -80,7 +80,7 @@
   (call-with-input-string plist-fixed-content read-plist/jsexpr))
 
 ; Hash attachments so that we can find the local path
-(define (get-attachment-hash path [domain "MediaDomain"])
+(define (hash-filename path [domain "MediaDomain"])
   (for*/first ([prefix (in-list (list "/var/mobile/"
                                       "~/"
                                       ""))]
