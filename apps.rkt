@@ -41,6 +41,34 @@
    (λ ()
      (with-input-from-file (build-path (backup-path (current-backup)) "Manifest.mbdb") read-mbdb))))
 
+; Load an app's plist file
+(define (load-plist! app)
+  (set-app-plist!
+   app 
+   (let ([plist-path
+          (build-path 
+           (backup-path (current-backup))
+           (hash-filename
+            (~a "Library/Preferences/" (app-name app) ".plist")
+            (~a "AppDomain-" (app-name app))))])
+     
+     ; Try to load in text mode first, if that fails fall back to binary
+     (with-handlers ([exn? (λ (exn)
+                             (call-with-input-file plist-path read-plist/jsexpr/binary))])
+       (call-with-input-file plist-path read-plist/jsexpr)))))
+
+; Load the list of files associated with an app
+(define (load-files! app)
+  (define app-domain (~a "AppDomain-" (app-name app)))
+  
+  (set-app-files!
+   app
+   (for/list ([record (in-list (list-mdbd-records))]
+              #:when (and (equal? (record-domain record) app-domain)
+                          (eq? 'file (record-mode record))))
+     (file (record-path record)
+           (build-path (backup-path (current-backup)) (record-hash record))))))
+
 ; Find an app by name (actually a case insensative regex)
 ; plists and files in domain are loaded when this is called and cached
 (define (find-app name)
@@ -49,32 +77,8 @@
                 #:when (regexp-match (~a "(?i:" name ")") (app-name app)))
       app))
   
-  ; If this app is missing it's plist, load it
-  ; Try to load as an xml plist firs,t fall back to binary
-  (when (and app (not (app-plist app)))
-    (set-app-plist!
-     app 
-     (let ([plist-path
-            (build-path 
-             (backup-path (current-backup))
-             (get-attachment-hash
-              (~a "Library/Preferences/" (app-name app) ".plist")
-              (~a "AppDomain-" (app-name app))))])
-  
-       (with-handlers ([exn? (λ (exn)
-                               (call-with-input-file plist-path read-plist/jsexpr/binary))])
-         (call-with-input-file plist-path read-plist/jsexpr)))))
-  
-  ; If this app hasn't loaded it's files from the mbdb manifest, do that
-  (when (and app (not (app-files app)))
-    (define app-domain (~a "AppDomain-" (app-name app)))
-    
-    (set-app-files!
-     app
-     (for/list ([record (in-list (list-mdbd-records))]
-                #:when (and (equal? (record-domain record) app-domain)
-                            (eq? 'file (record-mode record))))
-       (file (record-path record)
-             (build-path (backup-path (current-backup)) (record-hash record))))))
+  ; If this app is missing it's plist / files, load them
+  (when (and app (not (app-plist app))) (load-plist! app))
+  (when (and app (not (app-files app))) (load-files! app))
   
   app)
