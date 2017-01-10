@@ -31,7 +31,7 @@
    (λ ()
      (parameterize ([date-display-format 'iso-8601])
        ; Connect to the correct DB
-       (define sms-db (sqlite3-connect #:database (build-path (backup-path (current-backup)) MESSAGES-DB)))
+       (define sms-db (sqlite3-connect #:database (build-path (backup-path (current-backup)) (substring MESSAGES-DB 0 2) MESSAGES-DB)))
        
        ; Loop over the individual chat ids
        (for/list ([(chat-id) (in-query sms-db "SELECT ROWID FROM chat")])
@@ -86,7 +86,9 @@ ORDER BY date ASC")
                    (for/list ([path (in-list (string-split raw-attachments ","))])
                      (attachment
                       (path->string (last (explode-path path)))
-                      (build-path (backup-path (current-backup)) (hash-filename path))))))
+                      (build-path (backup-path (current-backup))
+                                  (substring (hash-filename path) 0 2)
+                                  (hash-filename path))))))
              
              (message date service sender subject text attachments)))
          

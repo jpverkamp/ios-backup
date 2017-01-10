@@ -25,7 +25,7 @@
    contacts-by-backup
    (current-backup)
    (λ ()
-     (define contacts-db (sqlite3-connect #:database (build-path (backup-path (current-backup)) CONTACTS-DB)))
+     (define contacts-db (sqlite3-connect #:database (build-path (backup-path (current-backup)) (substring CONTACTS-DB 0 2) CONTACTS-DB)))
      
      (for/list ([(user-id first-name middle-name last-name organization)
                  (in-query contacts-db "SELECT ROWID, First, Middle, Last, Organization FROM ABPerson")])
